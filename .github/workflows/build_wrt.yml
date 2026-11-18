@@ -15,6 +15,7 @@ on:
           - cmcc_rax3000m_immwrt
           - S20-WIFI-YES
           - S20-WIFI-NO
+          - clt_r30b1_112m
           - gemtek_w1701k_immwrt
           - jdcloud_ax6000_immwrt
           - jdcloud_ax6000_immwrt_honk
