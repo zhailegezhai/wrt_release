@@ -16,6 +16,7 @@ on:
           - S20-WIFI-YES
           - S20-WIFI-NO
           - clt_r30b1_112m
+          - ruijie_x60
           - gemtek_w1701k_immwrt
           - jdcloud_ax6000_immwrt
           - jdcloud_ax6000_immwrt_honk
