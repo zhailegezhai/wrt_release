@@ -17,6 +17,8 @@ on:
           - S20-WIFI-NO
           - clt_r30b1_112m
           - ruijie_x60
+          - ct3003_stock
+          - ct3003_ubootmod
           - gemtek_w1701k_immwrt
           - jdcloud_ax6000_immwrt
           - jdcloud_ax6000_immwrt_honk
