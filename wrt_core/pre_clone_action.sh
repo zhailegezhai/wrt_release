@@ -57,3 +57,51 @@ PROJECT_MIRRORS_FILE="$BUILD_DIR/scripts/projectsmirrors.json"
 if [ -f "$PROJECT_MIRRORS_FILE" ]; then
     sed -i '/.cn\//d; /tencent/d; /aliyun/d' "$PROJECT_MIRRORS_FILE"
 fi
+
+# ---- Generic DTS/device injection hook (per-model) ----
+# If wrt_core/dts_inject/<model>/ exists, copy DTS/DTSI into the kernel dts dir
+# and append device definition snippets to the target image makefile.
+# This is a no-op for all other models (directory absent).
+INJECT_DIR="$BASE_PATH/dts_inject/$Dev"
+if [[ -d "$INJECT_DIR" ]]; then
+    echo "DTS injection: detected $INJECT_DIR"
+
+    # 1) DTS / DTSI files -> target/linux/mediatek/dts/
+    DTS_TARGET_DIR="$BUILD_DIR/target/linux/mediatek/dts"
+    if [[ -d "$DTS_TARGET_DIR" ]]; then
+        for f in "$INJECT_DIR"/*.dts "$INJECT_DIR"/*.dtsi; do
+            [[ -f "$f" ]] || continue
+            \cp -f "$f" "$DTS_TARGET_DIR/"
+            echo "DTS injection: copied $(basename "$f")"
+        done
+    else
+        echo "DTS injection: WARNING dts dir not found: $DTS_TARGET_DIR"
+    fi
+
+    # 2) device definition snippets -> append to median image makefile
+    # Auto-detect the filogic image makefile used by this source tree.
+    IMG_MK=""
+    for cand in \
+        "$BUILD_DIR/target/linux/mediatek/image/filogic.mk" \
+        "$BUILD_DIR/target/linux/mediatek/filogic.mk"; do
+        if [[ -f "$cand" ]]; then
+            IMG_MK="$cand"
+            break
+        fi
+    done
+    if [[ -n "$IMG_MK" ]]; then
+        for f in "$INJECT_DIR"/*.mk; do
+            [[ -f "$f" ]] || continue
+            # skip if already injected (idempotent)
+            marker=$(head -1 "$f")
+            if grep -qF "$marker" "$IMG_MK"; then
+                echo "DTS injection: already present, skip $(basename "$f")"
+                continue
+            fi
+            cat "$f" >> "$IMG_MK"
+            echo "DTS injection: appended $(basename "$f") -> $IMG_MK"
+        done
+    else
+        echo "DTS injection: WARNING image makefile not found"
+    fi
+fi
