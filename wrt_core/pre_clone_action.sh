@@ -92,9 +92,9 @@ if [[ -d "$INJECT_DIR" ]]; then
     if [[ -n "$IMG_MK" ]]; then
         for f in "$INJECT_DIR"/*.mk; do
             [[ -f "$f" ]] || continue
-            # skip if already injected (idempotent)
-            marker=$(head -1 "$f")
-            if grep -qF "$marker" "$IMG_MK"; then
+            # skip if already injected (idempotent): use a non-empty marker line
+            marker=$(grep -m1 '^define Device/' "$f" || true)
+            if [[ -n "$marker" ]] && grep -qF "$marker" "$IMG_MK"; then
                 echo "DTS injection: already present, skip $(basename "$f")"
                 continue
             fi
