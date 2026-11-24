@@ -93,7 +93,7 @@ jobs:
           cp "$GITHUB_WORKSPACE/buildcfg/wrt_core/deconfig/fanch_pure.config" .config
           make defconfig
           echo "=== target device check ==="
-          grep -i 'TARGET_DEVICE.*x60' .config || { echo "ERROR: ruijie_rg-x60 device NOT selected!"; exit 1; }
+          grep -i 'PROFILE.*x60' .config || { echo "ERROR: ruijie_rg-x60 profile NOT selected!"; exit 1; }
           echo "=== PHY driver check ==="
           grep -i 'AIR_EN8811H' .config || true
 
