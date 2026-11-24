@@ -58,7 +58,8 @@ jobs:
           for f in "$INJ"/*.mk; do
             [ -f "$f" ] || continue
             marker=$(grep -m1 '^define Device/' "$f" || true)
-            if [ -n "$marker" ] && grep -qF "$marker" "$IMGMK"; then
+            # exact whole-line match: avoid substring collision with "...-pro" device
+            if [ -n "$marker" ] && grep -qxF "$marker" "$IMGMK"; then
               echo "  already present: $(basename "$f")"
               continue
             fi
@@ -92,7 +93,7 @@ jobs:
           cp "$GITHUB_WORKSPACE/buildcfg/wrt_core/deconfig/fanch_pure.config" .config
           make defconfig
           echo "=== target device check ==="
-          grep -i 'TARGET_DEVICE.*x60' .config || true
+          grep -i 'TARGET_DEVICE.*x60' .config || { echo "ERROR: ruijie_rg-x60 device NOT selected!"; exit 1; }
           echo "=== PHY driver check ==="
           grep -i 'AIR_EN8811H' .config || true
 
