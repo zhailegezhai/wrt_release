@@ -19,6 +19,7 @@ on:
           - ruijie_x60
           - ct3003_stock
           - ct3003_ubootmod
+          - fanch_x60
           - gemtek_w1701k_immwrt
           - jdcloud_ax6000_immwrt
           - jdcloud_ax6000_immwrt_honk
