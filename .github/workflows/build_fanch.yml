@@ -92,6 +92,8 @@ jobs:
           cd fanchmwrt
           cp "$GITHUB_WORKSPACE/buildcfg/wrt_core/deconfig/fanch_pure.config" .config
           make defconfig
+          echo "=== all device/profile symbols (diagnostic) ==="
+          grep -iE 'TARGET.*(PROFILE|DEVICE)' .config | head -40 || true
           echo "=== target device check ==="
           grep -i 'PROFILE.*x60' .config || { echo "ERROR: ruijie_rg-x60 profile NOT selected!"; exit 1; }
           echo "=== PHY driver check ==="
