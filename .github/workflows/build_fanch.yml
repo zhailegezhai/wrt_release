@@ -95,7 +95,7 @@ jobs:
           echo "=== all device/profile symbols (diagnostic) ==="
           grep -iE 'TARGET.*(PROFILE|DEVICE)' .config | head -40 || true
           echo "=== target device check ==="
-          grep -i 'PROFILE.*x60' .config || { echo "ERROR: ruijie_rg-x60 profile NOT selected!"; exit 1; }
+          grep -i 'DEVICE_ruijie_rg-x60=y' .config || { echo "ERROR: ruijie_rg-x60 device NOT selected!"; exit 1; }
           echo "=== PHY driver check ==="
           grep -i 'AIR_EN8811H' .config || true
 
