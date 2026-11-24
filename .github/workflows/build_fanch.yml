@@ -30,9 +30,9 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y binutils bzip2 diff find flex gawk gcc getopt grep \
-            install libc-dev libz-dev make perl python3 rsync subversion unzip which \
-            file libncurses-dev zlib1g-dev g++ libssl-dev xz-utils
+          sudo apt-get install -y binutils bzip2 flex gawk gcc grep \
+            libc-dev libz-dev make perl python3 rsync subversion unzip which \
+            file libncurses-dev zlib1g-dev g++ libssl-dev xz-utils patch
 
       - name: Clone fanchmwrt source
         run: |
