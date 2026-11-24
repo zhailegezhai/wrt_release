@@ -1,0 +1,120 @@
+name: Build FanchmWrt
+
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        required: true
+        description: Target device
+        type: choice
+        default: fanch_x60
+        options:
+          - fanch_x60
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  TZ: Asia/Shanghai
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout build config repo
+        uses: actions/checkout@main
+        with:
+          path: buildcfg
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y binutils bzip2 diff find flex gawk gcc getopt grep \
+            install libc-dev libz-dev make perl python3 rsync subversion unzip which \
+            file libncurses-dev zlib1g-dev g++ libssl-dev xz-utils
+
+      - name: Clone fanchmwrt source
+        run: |
+          git clone --depth 1 -b fanchmwrt-25.12.6 https://github.com/fanchmwrt/fanchmwrt.git fanchmwrt
+          echo "SOURCE=$(cd fanchmwrt && git rev-parse HEAD)" >> $GITHUB_ENV
+
+      - name: Inject non-Pro X60 DTS + device definition
+        run: |
+          set -e
+          CFG="$GITHUB_WORKSPACE/buildcfg/wrt_core"
+          SRC="$GITHUB_WORKSPACE/fanchmwrt"
+          INJ="$CFG/dts_inject/fanch_x60"
+
+          echo "=== inject DTS/DTSI ==="
+          for f in "$INJ"/*.dts "$INJ"/*.dtsi; do
+            [ -f "$f" ] || continue
+            cp -f "$f" "$SRC/target/linux/mediatek/dts/"
+            echo "  copied $(basename "$f")"
+          done
+
+          echo "=== inject device definition ==="
+          IMGMK="$SRC/target/linux/mediatek/image/filogic.mk"
+          for f in "$INJ"/*.mk; do
+            [ -f "$f" ] || continue
+            marker=$(grep -m1 '^define Device/' "$f" || true)
+            if [ -n "$marker" ] && grep -qF "$marker" "$IMGMK"; then
+              echo "  already present: $(basename "$f")"
+              continue
+            fi
+            cat "$f" >> "$IMGMK"
+            echo "  appended $(basename "$f")"
+          done
+
+          echo "=== verify injection ==="
+          grep -q 'define Device/ruijie_rg-x60' "$IMGMK" && echo "  device OK"
+          ls -l "$SRC/target/linux/mediatek/dts/mt7986a-ruijie-rg-x60.dts"
+
+      - name: Inject files overlay (campus plugins)
+        run: |
+          SRC="$GITHUB_WORKSPACE/fanchmwrt"
+          FILES="$GITHUB_WORKSPACE/buildcfg/wrt_core/files/fanch_x60"
+          if [ -d "$FILES" ]; then
+            mkdir -p "$SRC/files"
+            cp -a "$FILES"/. "$SRC/files/"
+            echo "injected $(find "$SRC/files" -type f | wc -l) files"
+          fi
+
+      - name: Feeds update and install
+        run: |
+          cd fanchmwrt
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+      - name: Apply config
+        run: |
+          cd fanchmwrt
+          cp "$GITHUB_WORKSPACE/buildcfg/wrt_core/deconfig/fanch_pure.config" .config
+          make defconfig
+          echo "=== target device check ==="
+          grep -i 'TARGET_DEVICE.*x60' .config || true
+          echo "=== PHY driver check ==="
+          grep -i 'AIR_EN8811H' .config || true
+
+      - name: Build firmware
+        run: |
+          cd fanchmwrt
+          make -j$(($(nproc) + 1)) || make -j1 V=s
+
+      - name: Collect firmware
+        run: |
+          mkdir -p firmware_out
+          find fanchmwrt/bin/targets -type f \
+            \( -name '*sysupgrade*' -o -name '*factory*' -o -name '*.itb' \
+               -o -name '*manifest*' -o -name '*fip' -o -name '*preloader*' \) \
+            -exec cp -f {} firmware_out/ \;
+          echo "=== firmware files ==="
+          ls -lh firmware_out/
+          du -sh firmware_out/
+
+      - name: Upload firmware
+        uses: actions/upload-artifact@v4
+        with:
+          name: fanch_x60_${{ github.run_id }}
+          path: firmware_out/*
+          if-no-files-found: error
